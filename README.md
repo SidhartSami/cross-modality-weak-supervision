@@ -40,54 +40,13 @@ Limited tumour visibility on intra-operative images complicates surgical navigat
 
 This repository provides a clean, minimal, and fully runnable implementation of our cross-modality weakly supervised framework. The repository explicitly distinguishes between the **primary proposed method** and the **comparative domain adaptation baselines/ablations** benchmarked in the paper.
 
-### 1. Primary Proposed Method (Zero-Shot Cross-Modality Localization)
+### Proposed Method
 - `models/se_resnet3d.py`: Standalone architecture of the 3D Squeeze-and-Excitation ResNet presence classifier.
 - `train_classifier.py`: Trains the primary 3D SE-ResNet tumor presence classifier on MRI scans using weak binary labels.
-- `train_rl.py`: Trains the autonomous RL agent (PPO) to navigate 3D CT volumes using the MRI classifier as a zero-shot reward model.
-- `checkpoints/se_resnet3d_best.pt`: Pretrained 3D SE-ResNet foundation model checkpoint (7.7 MB) included directly in the repository for immediate evaluation.
+- `train_rl.py`: Trains the RL agent (PPO) to navigate 3D CT volumes using the MRI classifier.
 
-### 2. Comparative Domain Adaptation Baselines (Paper Benchmark)
-The `domain_adaptation/` directory contains all 5 domain adaptation strategies evaluated in the paper:
-- `naive_mri_to_ct.py`: **Zero-Shot Direct Transfer** (the unadapted baseline quantifying the raw cross-modality gap).
-- `histogram_matching.py`: **Statistical Histogram Matching** (non-parametric image-level alignment to MRI reference).
-- `cyclegan_pseudo_ct.py`: **CycleGAN Pseudo-CT Translation** (evaluates classifier on synthetic CT domain bridge).
-- `progressive_finetuning.py`: **Progressive Fine-Tuning** (feature-level layer-wise adaptation from MRI to CT).
-- `dann_adversarial.py`: **Domain-Adversarial Neural Network (DANN)** (latent alignment using a Gradient Reversal Layer).
-
-### 3. Reinforcement Learning Ablations
-The `rl_experiments/` directory contains the empirical ablations reported in the paper:
-- `threshold_sweep.py`: Complete 16-point threshold calibration sweep ($\tau = 0.10 \to 1.00$), showing how high thresholds ($\tau \ge 0.90$) prune boundary false positives to optimize 3D Dice.
-- `window_size_ablation.py`: Sensitivity study across window dimensions ($16^3$, $32^3$, $48^3$, $64^3$).
-
-### 4. Translation Bridge Pipeline
+### Synthetic Transfer Pipeline
 - `cyclegan/train_cyclegan.py`: The underlying 3D/2.5D CycleGAN unpaired image translation training pipeline used for the neural domain bridge experiments.
-
-## Project Structure
-
-```text
-cross-modality-weak-supervision/
-├── train_classifier.py       # Primary Method: MRI classifier training
-├── train_rl.py               # Primary Method: RL agent zero-shot CT training  
-├── models/                   # Core neural network architectures
-│   └── se_resnet3d.py        # 3D Squeeze-and-Excitation ResNet classifier
-├── domain_adaptation/        # Comparative domain adaptation baselines (all 5 paper methods)
-│   ├── naive_mri_to_ct.py         # 1. Zero-Shot direct transfer baseline
-│   ├── histogram_matching.py      # 2. Statistical histogram matching
-│   ├── cyclegan_pseudo_ct.py      # 3. CycleGAN pseudo-CT evaluation
-│   ├── progressive_finetuning.py  # 4. Progressive layer-wise fine-tuning
-│   └── dann_adversarial.py        # 5. Domain-Adversarial Neural Network (DANN)
-├── rl_experiments/           # Paper RL ablations & threshold calibration
-│   ├── threshold_sweep.py         # 16-point threshold sweep (tau = 0.10 -> 1.00)
-│   └── window_size_ablation.py    # Window size dimension comparison
-├── cyclegan/                 # Translation bridge module
-│   └── train_cyclegan.py          # 3D/2.5D CycleGAN training pipeline
-├── checkpoints/              # Pretrained model weights
-│   └── se_resnet3d_best.pt        # Pretrained 3D SE-ResNet Foundation Model (7.7 MB)
-├── requirements.txt
-├── pyproject.toml
-├── Method.png                # Pipeline architecture diagram
-└── README.md
-```
 
 ## Setting Up a Virtual Environment
 
@@ -120,7 +79,7 @@ pip install -r requirements.txt
 
 ## Running Experiments
 
-### 1. Primary Method: Train Classifier & Zero-Shot RL Agent
+### Primary Method: Train Classifier & Zero-Shot RL Agent
 Run the main 3D SE-ResNet classifier training on MRI:
 ```bash
 python train_classifier.py --data_dir ./data/mri_crops --epochs 32 --device cuda
@@ -131,34 +90,7 @@ Deploy the autonomous RL agent on CT volumes using zero-shot reward guidance:
 python train_rl.py --classifier_checkpoint ./checkpoints/se_resnet3d_best.pt --threshold 0.90 --device cuda
 ```
 
-### 2. Comparative Domain Adaptation Baselines (5 Methods)
-```bash
-# Method 1: Zero-Shot Direct MRI-to-CT Transfer
-python domain_adaptation/naive_mri_to_ct.py
-
-# Method 2: Statistical Histogram Matching
-python domain_adaptation/histogram_matching.py
-
-# Method 3: CycleGAN Pseudo-CT Translation Bridge
-python domain_adaptation/cyclegan_pseudo_ct.py
-
-# Method 4: Progressive Layer-Wise Fine-Tuning
-python domain_adaptation/progressive_finetuning.py
-
-# Method 5: Domain-Adversarial Neural Network (DANN)
-python domain_adaptation/dann_adversarial.py
-```
-
-### 3. RL Sensitivity & Threshold Calibration Ablations
-```bash
-# 16-point threshold sweep (tau = 0.10 to 1.00)
-python rl_experiments/threshold_sweep.py
-
-# Window size geometry ablation
-python rl_experiments/window_size_ablation.py
-```
-
-### 4. CycleGAN Translation Pipeline
+### CycleGAN Training
 ```bash
 python cyclegan/train_cyclegan.py --epochs 100 --device cuda
 ```
