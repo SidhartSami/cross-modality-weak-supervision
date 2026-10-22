@@ -1,20 +1,13 @@
-# Cross-Modality Weak Supervision for 3D Tumor Localization
+# Reinforcing intra-operative tumour localisation with weak supervision from pre-operative appearances
 
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange)
 ![License](https://img.shields.io/badge/license-Research-lightgrey)
 
 ## Abstract
-Accurate 3D tumor localization on computed tomography (CT) is vital for targeted diagnostic assessment, radiation oncology, and surgical resection of liver tumors (Hepatocellular Carcinoma, HCC). However, training supervised 3D segmentation models requires dense voxel-level contours delineated by expert radiologists—an expensive, time-consuming process with high inter-observer variability. In contrast, clinical archives contain large quantities of unlabeled CT scans, while multi-phase MRI repositories often provide rich lesion annotations or verified biopsy presence labels. In this work, we propose a cross-modality weakly supervised framework where **Zero-Shot Cross-Modality Transfer** serves as the primary method: we train a 3D Squeeze-and-Excitation presence classifier using only binary image-level cancer presence labels on MRI, and deploy an autonomous reinforcement learning (RL) agent that navigates 3D CT volumes to localize tumors guided solely by the classifier's zero-shot confidence landscape—without requiring any CT annotations or paired cross-modality training. We benchmark our primary zero-shot framework against four alternative domain adaptation methodologies: statistical histogram matching, neural translation bridges (CycleGAN), progressive fine-tuning, and domain-adversarial neural networks (DANN). Evaluating on unseen clinical CT scans across 19 verified patient cohorts, our calibrated autonomous zero-shot agent achieves high tumor localization accuracy (exceeding 44% to 53% Dice on bulky lesions under true zero-leakage full-volume search) while operating 56× faster than multi-channel baselines. Our framework provides a practical, label-free pathway for deploying cross-modality weakly supervised tumor detection in clinical CT workflows.
+Limited tumour visibility on intra-operative images complicates surgical navigation, including liver hepatocellular carcinoma (HCC) targeting on computed tomography (CT) imaging. This makes labelled datasets difficult to curate for deep learning, and transferring pre-operative delineations through registration remains challenging due to intra-operative deformation and lack of paired pre- and intra-operative data. We propose to transfer tumour appearances learned from pre-operative magnetic resonance (MR) images to guide localisation on intra-operative CT through weak supervision. A classifier is trained to classify tumour presence on pre-operative images. This is applied to windows on intra-operative images, and despite the domain gap, it assigns higher tumour-presence probabilities on average to tumour-containing windows. These weak cross-domain signals guide a reinforcement learning agent to localise tumours on intra-operative images. We compare direct transfer, few-shot adaptation and synthetic transfer (trained using unpaired MR and CT), which translates CT into synthetic MR before localisation. On an external HCC cohort, synthetic transfer outperformed other tested methods and CT-only baselines. Our framework enables cross-modality tumour localisation without paired MR-CT training images.
 
-## Method
-We propose an autonomous reinforcement learning framework for weakly supervised cross-modality tumor localization where an agent navigates unseen 3D CT volumes guided by an MRI-trained reward model under a **Zero-Shot Transfer** paradigm. An object presence classifier (3D SE-ResNet) is pre-trained using only binary, image-level presence labels on MRI. During zero-shot deployment on CT, the agent moves a 3D observation window across the target volume at every time step and queries the classifier. The resulting confidence score determines the likelihood that a tumor falls within the window and drives the reward signal, training the agent to localize the lesion. As the window traverses the volume, visited voxels accumulate confidence scores into a 3D segmentation map. The episode terminates when the agent hits a calibrated operating threshold $\tau$ or exceeds a step budget. By calibrating the operating threshold to $\tau \ge 0.90$, the policy effectively prunes the outer false-positive shell of non-lesion parenchyma, isolating the high-confidence tumor core without requiring any CT voxel labels or paired domain translation.
-
-![Classifier Pretraining to CT Localization Pipeline](Method.png)
-
-*Figure 1: Cross-Modality Weakly Supervised 3D Tumor Localization Pipeline. (Stage 1) 3D SE-ResNet presence classifier pre-trained on multi-phase MRI using binary biopsy/pathology labels; (Stage 2) Autonomous RL agent (PPO) navigating 3D CT volumes under zero-shot reward guidance with calibrated thresholding ($\tau \ge 0.90$).*
-
-## Algorithm Parameters
+## Hyperparameters
 ### Object Presence Classifier Parameters (SE-ResNet3D)
 
 | **Parameters**            | **Details**                           |
@@ -138,7 +131,7 @@ Deploy the autonomous RL agent on CT volumes using zero-shot reward guidance:
 python train_rl.py --classifier_checkpoint ./checkpoints/se_resnet3d_best.pt --threshold 0.90 --device cuda
 ```
 
-### 2. Comparative Domain Adaptation Baselines (All 5 Methods)
+### 2. Comparative Domain Adaptation Baselines (5 Methods)
 ```bash
 # Method 1: Zero-Shot Direct MRI-to-CT Transfer
 python domain_adaptation/naive_mri_to_ct.py
@@ -172,8 +165,6 @@ python cyclegan/train_cyclegan.py --epochs 100 --device cuda
 
 ## Reproducibility Notes
 
-- **Primary vs. Comparison Framing**: The primary method is **Zero-Shot Cross-Modality Transfer** (`train_classifier.py` and `train_rl.py`). The scripts in `domain_adaptation/` represent the 5 comparative domain adaptation baselines evaluated in the paper.
-- **Pretrained Checkpoint Included**: The trained foundation classifier weights (`checkpoints/se_resnet3d_best.pt`, 7.7 MB) are tracked and provided directly in the repository, allowing immediate evaluation of zero-shot transfer without retraining from scratch.
 - **Reviewer Demo Mode**: If no local medical datasets are provided, all scripts automatically generate synthetic volumetric tensors, enabling reviewers to verify end-to-end execution immediately out-of-the-box.
 - **Data Paths**: Update `--data_dir` in `train_classifier.py` and `--ct_dir` in `train_rl.py` to point to your local NIfTI cohorts.
 - **Hardware Acceleration**: Pass `--device cuda` or `--device cpu`. Specific GPUs can be selected via `CUDA_VISIBLE_DEVICES`.
@@ -183,10 +174,5 @@ python cyclegan/train_cyclegan.py --epochs 100 --device cuda
 If you use this codebase or framework in academic work, please cite:
 
 ```bibtex
-@article{crossmodality_weak_supervision2027,
-  title={Cross-Modality Weak Supervision for 3D Tumor Localization: Zero-Shot Transfer from MRI to CT via Autonomous Reinforcement Learning},
-  author={Research Team and Saeed, Shaheer U.},
-  journal={arXiv preprint},
-  year={2027}
-}
+to-be-added
 ```
