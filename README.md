@@ -22,7 +22,7 @@ Limited tumour visibility on intra-operative images complicates surgical navigat
 | Criterion                 | Binary Cross Entropy with Logits      |
 | Learning rate             | 0.001                                 |
 
-### Autonomous Reinforcement Learning Parameters (PPO)
+### Reinforcement Learning Parameters (PPO)
 
 | **Parameters**            | **Details**                           |
 |---------------------------|---------------------------------------|
